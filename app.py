@@ -6,6 +6,7 @@ from pathlib import Path
 from time import time
 import requests
 from flask import Flask, request, jsonify
+from flask import redirect, url_for, session
 import torch
 from PIL import Image
 from torchvision import transforms
@@ -91,7 +92,7 @@ def send_message(chat_id: str, text: str):
 # Flask application
 # ---------------------------------------------------------------------------
 app = Flask(__name__)
-
+app.secret_key = os.urandom(24)
 
 @app.route("/health", methods=["GET"])
 def health():
@@ -210,13 +211,26 @@ def upload():
             return "No selected file", 400
         tmp_path = upload_dir / f"{uuid.uuid4()}.jpg"
         file.save(tmp_path)
-
+        # Perform classification
         label, conf = classify(model, tmp_path)
+
+        # Store results in session
+        session['result'] = {
+            'image': tmp_path.name,
+            'label': label,
+            'confidence': conf
+        }
+        return redirect(url_for('upload'))
+
+    # Handle GET request
+    result_html = ""
+    if 'result' in session:
+        result = session['result']
         result_html = f"""
         <h2>Prediction Result</h2>
-        <img src="/static/uploads/{tmp_path.name}" alt="Uploaded Image" style="max-width: 300px; max-height: 300px;">
-        <p><strong>Label:</strong> {label}</p>
-        <p><strong>Confidence:</strong> {conf:.0%}</p>
+        <img src="/static/uploads/{result['image']}" alt="Uploaded Image" style="max-width: 300px; max-height: 300px;">
+        <p><strong>Label:</strong> {result['label']}</p>
+        <p><strong>Confidence:</strong> {result['confidence']:.0%}</p>
         """
 
     return f"""
@@ -224,7 +238,7 @@ def upload():
     <title>Upload Image</title>
     <h1>Upload an image to test classification</h1>
     <form method="POST" enctype="multipart/form-data">
-        <input type="file" name="file">
+        <input type="file" name="file" accept="image/*">
         <input type="submit" value="Upload">
     </form>
     {result_html}

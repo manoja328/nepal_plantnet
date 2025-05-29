@@ -1,4 +1,7 @@
 #### Running the App
+
+![Demo app](demo.png)
+
 1. Start the application:
    ```bash
    python app.py
