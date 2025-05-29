@@ -7,26 +7,11 @@ from torchvision.datasets import ImageFolder
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ExponentialLR
 from tqdm import tqdm
+from utils import PlantDiseaseModel
 
 # Set random seed
 torch.manual_seed(42)
 
-# Model definition
-class PlantDiseaseModel(nn.Module):
-    def __init__(self, num_classes):
-        super().__init__()
-        # Load pretrained SqueezeNet
-        squeezenet = torchvision.models.squeezenet1_1(weights='DEFAULT')
-        # Replace final classifier
-        squeezenet.classifier[1] = nn.Conv2d(512, num_classes, kernel_size=1)
-        self.model = squeezenet
-        # Add dropout for regularization
-        self.dropout = nn.Dropout(p=0.5)
-    
-    def forward(self, x):
-        x = self.model(x)
-        x = self.dropout(x)
-        return torch.squeeze(x)
 
 # Data transforms
 transform = transforms.Compose([
@@ -35,6 +20,27 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
                        std=[0.229, 0.224, 0.225])
 ])
+
+# Replace the existing transform with:
+# transform = transforms.Compose([
+#     transforms.RandomResizedCrop(224),
+#     transforms.RandomHorizontalFlip(),
+#     transforms.RandomRotation(15),
+#     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+#     transforms.ToTensor(),
+#     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+#                        std=[0.229, 0.224, 0.225])
+# ])
+
+# Add separate transform for validation/test
+val_transform = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                       std=[0.229, 0.224, 0.225])
+])
+
 
 # Dataset and DataLoader
 def get_data_loaders(train_dir, test_dir=None, test_size=0.2, batch_size=32):

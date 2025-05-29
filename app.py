@@ -64,8 +64,10 @@ if not torch.cuda.is_available():
 
 
 ## load quantized weights if available to speed up inference
-weights_file = Path(__file__).with_name("leaf_model_quantized.pt")
-model = get_squeezenet_model(weights_file)
+# weights_file = Path(__file__).with_name("best_model.pth")
+# model = get_squeezenet_model(weights_file)
+model = PlantDiseaseModel(num_classes = 38)
+model.load_state_dict(torch.load('best_model.pth', weights_only=True, map_location="cpu"))
 print(model)
 
 
